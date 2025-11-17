@@ -1,43 +1,44 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:get/get.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'providers/cart_provider.dart';
-import 'services/preferences_service.dart';
+// CONTROLLER
+import 'controllers/cart_controller.dart';
+import 'controllers/theme_controller.dart';
+import 'controllers/auth_controller.dart';
+import 'controllers/product_controller.dart';
+
+// SERVICES
 import 'services/hive_service.dart';
 import 'services/supabase_service.dart';
+import 'services/shared_prefs_service.dart';
 
+// PAGES
 import 'pages/home_page.dart';
 import 'pages/cart_page.dart';
 import 'pages/product_list_page.dart';
 import 'views/product_view.dart';
-
-// Pages untuk modul eksplorasi
 import 'pages/notes_page.dart';
 import 'pages/note_edit_page.dart';
+import 'pages/login_page.dart';
+import 'pages/register_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🔹 Init SharedPreferences (tema aplikasi)
-  await PreferencesService.init();
-
-  // 🔹 Init Hive (data lokal)
+  // 🔹 Init services
+  await SharedPrefsService.init();
   await HiveService.init();
-
-  // 🔹 Init Supabase
   await SupabaseService.init();
 
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => CartProvider()),
-      ],
-      child: const MyApp(),
-    ),
-  );
+  // 🔹 Register GetX controllers
+  Get.put(CartController());
+  Get.put(ThemeController());
+  Get.put(AuthController());
+  Get.put(ProductController());
+
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -45,53 +46,52 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GetMaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Toko Rian Farah',
+    final themeC = Get.find<ThemeController>();
 
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.blue,
-          foregroundColor: Colors.white,
-          elevation: 2,
+    return Obx(() {
+      return GetMaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Toko Rian Farah',
+
+        // 🔹 Tema dari SharedPreferences
+        themeMode: themeC.isDark ? ThemeMode.dark : ThemeMode.light,
+        theme: ThemeData(
+          brightness: Brightness.light,
+          primarySwatch: Colors.blue,
         ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 10),
+        darkTheme: ThemeData(
+          brightness: Brightness.dark,
+          primarySwatch: Colors.blueGrey,
+        ),
+
+        // 🔥 Redirect jika belum login
+        initialRoute: (Supabase.instance.client.auth.currentUser == null)
+            ? '/login'
+            : '/',
+
+        getPages: [
+          // Auth Pages
+          GetPage(name: '/login', page: () => LoginPage()),
+          GetPage(name: '/register', page: () => RegisterPage()),
+
+          // Main App
+          GetPage(name: '/', page: () => const HomePage()),
+          GetPage(name: '/cart', page: () => const CartPage()),
+          GetPage(
+            name: '/material',
+            page: () => const ProductListPage(category: 'material'),
           ),
-        ),
-        outlinedButtonTheme: OutlinedButtonThemeData(
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.blue,
-            side: const BorderSide(color: Colors.blue),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 10),
+          GetPage(
+            name: '/sembako',
+            page: () => const ProductListPage(category: 'sembako'),
           ),
-        ),
-      ),
+          GetPage(name: '/experiment', page: () => ProductView()),
 
-      initialRoute: '/',
-      getPages: [
-        GetPage(name: '/', page: () => const HomePage()),
-        GetPage(name: '/cart', page: () => const CartPage()),
-        GetPage(name: '/material',
-            page: () => const ProductListPage(category: 'material')),
-        GetPage(name: '/sembako',
-            page: () => const ProductListPage(category: 'sembako')),
-        GetPage(name: '/experiment', page: () => ProductView()),
-
-        // 🔹 Routing baru untuk fitur Notes (modul eksplorasi)
-        GetPage(name: '/notes', page: () => const NotesPage()),
-        GetPage(name: '/note-edit', page: () => const NoteEditPage()),
-      ],
-    );
+          // Notes CRUD
+          GetPage(name: '/notes', page: () => const NotesPage()),
+          GetPage(name: '/note-edit', page: () => const NoteEditPage()),
+        ],
+      );
+    });
   }
 }

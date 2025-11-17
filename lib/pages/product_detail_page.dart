@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../models/product.dart';
-import '../cart.dart';
+import '../controllers/cart_controller.dart';
 import 'cart_page.dart';
 
 class ProductDetailPage extends StatefulWidget {
@@ -12,11 +13,13 @@ class ProductDetailPage extends StatefulWidget {
 }
 
 class _ProductDetailPageState extends State<ProductDetailPage> {
+  final cart = Get.find<CartController>();
   int quantity = 1;
 
   @override
   Widget build(BuildContext context) {
-    final price = 'Rp ${(widget.product.price * quantity).toStringAsFixed(0)}';
+    final totalPrice =
+        'Rp ${(widget.product.price * quantity).toStringAsFixed(0)}';
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -29,55 +32,76 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         ),
         iconTheme: const IconThemeData(color: Colors.black87),
       ),
+
       body: SingleChildScrollView(
         child: Column(
           children: [
             Hero(
-              tag: widget.product.name,
-              child: Image.asset(widget.product.image,
-                  height: 300, fit: BoxFit.contain),
+              tag: widget.product.id,
+              child: Image.asset(
+                widget.product.image,
+                height: 300,
+                fit: BoxFit.contain,
+              ),
             ),
+
             Container(
-              color: Colors.white,
               padding: const EdgeInsets.all(16),
-              width: double.infinity,
+              color: Colors.white,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    price,
+                    totalPrice,
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: Colors.redAccent,
                     ),
                   ),
+
                   const SizedBox(height: 8),
-                  Text(widget.product.name,
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.w600)),
+
+                  Text(
+                    widget.product.name,
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
+
                   const SizedBox(height: 16),
                   const Divider(),
-                  const Text('Deskripsi Produk',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+
+                  const Text(
+                    "Deskripsi Produk",
+                    style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 8),
+
                   Text(
                     widget.product.description,
                     style: const TextStyle(
-                        fontSize: 14, color: Colors.black87, height: 1.5),
+                      fontSize: 14,
+                      height: 1.5,
+                      color: Colors.black87,
+                    ),
                   ),
-                  const SizedBox(height: 16),
+
+                  const SizedBox(height: 20),
+
                   Row(
                     children: [
-                      const Text('Jumlah: '),
+                      const Text("Jumlah:  "),
                       IconButton(
                         icon: const Icon(Icons.remove),
                         onPressed: () {
-                          if (quantity > 1) setState(() => quantity--);
+                          if (quantity > 1) {
+                            setState(() => quantity--);
+                          }
                         },
                       ),
-                      Text('$quantity'),
+                      Text(quantity.toString(),
+                          style: const TextStyle(fontSize: 16)),
                       IconButton(
                         icon: const Icon(Icons.add),
                         onPressed: () {
@@ -88,10 +112,11 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   ),
                 ],
               ),
-            ),
+            )
           ],
         ),
       ),
+
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
         color: Colors.white,
@@ -100,27 +125,27 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             Expanded(
               child: OutlinedButton(
                 onPressed: () {
-                  Cart().addItem(widget.product, quantity);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Produk ditambahkan ke keranjang')),
+                  cart.addToCart(widget.product, qty: quantity);
+
+                  Get.snackbar(
+                    "Sukses",
+                    "Produk ditambahkan ke keranjang",
+                    snackPosition: SnackPosition.BOTTOM,
                   );
                 },
-                child: const Text('Masukkan Keranjang'),
+                child: const Text("Masukkan Keranjang"),
               ),
             ),
+
             const SizedBox(width: 12),
+
             Expanded(
               child: ElevatedButton(
                 onPressed: () {
-                  Cart().addItem(widget.product, quantity);
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const CartPage()));
+                  cart.addToCart(widget.product, qty: quantity);
+                  Get.to(() => const CartPage());
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                ),
-                child: const Text('Beli Sekarang'),
+                child: const Text("Beli Sekarang"),
               ),
             ),
           ],

@@ -19,6 +19,11 @@ dependencies:
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   supabase_flutter: ^2.5.0
+  shared_preferences: ^2.0.15
+  cached_network_image: ^3.2.3
+  image_picker: ^0.8.7+5
+  permission_handler: ^12.0.1
+
 
   cupertino_icons:  ^1.0.8
 

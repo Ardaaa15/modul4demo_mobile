@@ -1,141 +1,75 @@
 import 'package:flutter/material.dart';
-import '../cart.dart';
-import '../models/cart_item.dart';
+import 'package:get/get.dart';
+import '../controllers/cart_controller.dart';
 
-class CartPage extends StatefulWidget {
+class CartPage extends StatelessWidget {
   const CartPage({super.key});
 
   @override
-  State<CartPage> createState() => _CartPageState();
-}
-
-class _CartPageState extends State<CartPage> {
-  @override
   Widget build(BuildContext context) {
-    final cartItems = Cart().items;
+    final CartController cart = Get.find();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Keranjang'),
-        backgroundColor: Colors.blue,
-        centerTitle: true,
-        elevation: 1,
+        title: const Text("Keranjang Belanja"),
       ),
-      body: cartItems.isEmpty
-          ? const Center(child: Text('Keranjang kosong'))
-          : ListView.builder(
-              itemCount: cartItems.length,
-              itemBuilder: (context, index) {
-                final item = cartItems[index];
-                return ListTile(
+      body: Obx(() {
+        if (cart.items.isEmpty) {
+          return const Center(
+            child: Text(
+              "Keranjang kosong",
+              style: TextStyle(fontSize: 16),
+            ),
+          );
+        }
+
+        return ListView.builder(
+          itemCount: cart.items.length,
+          itemBuilder: (context, index) {
+            final item = cart.items[index];
+
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                child: ListTile(
                   leading: Image.asset(
                     item.product.image,
-                    width: 50,
-                    height: 50,
+                    width: 60,
+                    height: 60,
                     fit: BoxFit.cover,
                   ),
                   title: Text(item.product.name),
-                  subtitle: Text(
-                    'Rp ${item.product.price.toStringAsFixed(0)} x ${item.quantity} = Rp ${(item.product.price * item.quantity).toStringAsFixed(0)}',
+                  subtitle: Text("Rp ${item.product.price} x ${item.qty}"),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () {
+                      cart.removeItem(item.product);
+                    },
                   ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(
-                          Icons.remove,
-                          color: Colors.blueAccent,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            if (item.quantity > 1) {
-                              item.quantity -= 1;
-                            } else {
-                              Cart().removeItem(item.product.id);
-                            }
-                          });
-                        },
-                      ),
-                      Text(item.quantity.toString()),
-                      IconButton(
-                        icon: const Icon(Icons.add, color: Colors.blueAccent),
-                        onPressed: () {
-                          setState(() {
-                            item.quantity += 1;
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-      bottomNavigationBar: cartItems.isNotEmpty
-          ? Container(
-              color: Colors.grey[100],
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Total: Rp ${Cart().totalPrice.toStringAsFixed(0)}',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              Cart().clear();
-                            });
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Keranjang dikosongkan'),
-                                duration: Duration(seconds: 1),
-                              ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue.shade700,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                          child: const Text('Kosongkan Keranjang'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Berhasil membeli ${cartItems.length} item. Total: Rp ${Cart().totalPrice.toStringAsFixed(0)}',
-                                ),
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
-                            setState(() {
-                              Cart().clear();
-                            });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.lightBlue.shade600,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                          child: const Text('Beli Sekarang'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                ),
               ),
-            )
-          : null,
+            );
+          },
+        );
+      }),
+      bottomNavigationBar: Obx(() {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          color: Colors.blue.shade50,
+          child: Text(
+            "Total: Rp ${cart.totalPrice}",
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        );
+      }),
     );
   }
 }

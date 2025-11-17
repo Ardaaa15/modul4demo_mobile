@@ -1,76 +1,72 @@
+import 'dart:io';
 import 'package:get/get.dart';
 import '../models/note.dart';
 import '../services/hive_service.dart';
 import '../services/supabase_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class NotesController extends GetxController {
   final hive = HiveService();
-  final supabase = SupabaseService();
-
   var notes = <Note>[].obs;
   var isLoading = false.obs;
 
   @override
   void onInit() {
-    loadLocalNotes();
     super.onInit();
+    loadLocalNotes();
   }
 
   Future<void> loadLocalNotes() async {
-    notes.value = hive.fetchNotes();
+    final fetched = await hive.fetchNotes(); // List<Note>
+    notes.assignAll(fetched);
   }
 
-  Future<void> addNote(Note note, {bool pushToCloud = true}) async {
+  Future<void> addNote(Note note) async {
     isLoading(true);
     try {
       await hive.addNote(note);
-      if (pushToCloud) {
-        await supabase.addNote(note);
-      }
-      loadLocalNotes();
+      await SupabaseService.addNote(note);
+      await loadLocalNotes(); // reload terbaru
       Get.snackbar('Sukses', 'Catatan ditambahkan');
     } finally {
       isLoading(false);
     }
   }
 
-  Future<void> updateNote(Note note, {bool pushToCloud = true}) async {
+  Future<void> updateNote(Note note) async {
     isLoading(true);
     try {
       await hive.updateNote(note);
-      if (pushToCloud) {
-        await supabase.updateNote(note);
-      }
-      loadLocalNotes();
+      await SupabaseService.updateNote(note);
+      await loadLocalNotes();
       Get.snackbar('Sukses', 'Catatan diperbarui');
     } finally {
       isLoading(false);
     }
   }
 
-  Future<void> deleteNote(String id, {bool pushToCloud = true}) async {
+  Future<void> deleteNote(String id) async {
     isLoading(true);
     try {
       await hive.deleteNote(id);
-      if (pushToCloud) {
-        await supabase.deleteNote(id);
-      }
-      loadLocalNotes();
+      await SupabaseService.deleteNote(id);
+      await loadLocalNotes();
       Get.snackbar('Sukses', 'Catatan dihapus');
     } finally {
       isLoading(false);
     }
   }
 
-  Future<void> syncNotesFromCloud() async {
-    isLoading(true);
+  Future<String?> uploadImage(File file) async {
     try {
-      final data = await supabase.fetchNotes();
-      await hive.syncFromCloud(data);
-      loadLocalNotes();
-      Get.snackbar('Sync', 'Sinkronisasi selesai');
-    } finally {
-      isLoading(false);
+      final fileName =
+          'notes/${DateTime.now().millisecondsSinceEpoch}_${file.path.split('/').last}';
+      await Supabase.instance.client.storage.from('notes').upload(fileName, file);
+      final url = Supabase.instance.client.storage.from('notes').getPublicUrl(fileName);
+      return url;
+    } catch (e) {
+      Get.snackbar('Error', 'Gagal upload gambar: $e');
+      return null;
     }
   }
 }
